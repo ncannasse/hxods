@@ -396,17 +396,28 @@ class OdsChecker {
 				throw "assert " + x.nodeName+" at line "+line;
 			else {
 				if( first ) first = false else html.add("\n");
-				for( e in x ) {
-					if( e.nodeType == Xml.Element && e.nodeName == "text:s" )
-						html.add("\n");
-					else
-						html.add(e.toString());
-				}
+				for( e in x )
+					extractTextContent(html, e, line);
 			}
 		}
-		var v = html.toString();
-		v = v.split("&apos;").join("'");
+		var v = StringTools.htmlUnescape(html.toString());
+		v = v.split("&apos;").join("'").split("&quot;").join('"');
 		return v;
+	}
+
+	function extractTextContent( html : StringBuf, e : Xml, line : Int ) {
+		if( e.nodeType == Xml.Element ) {
+			switch( e.nodeName ) {
+			case "text:s":
+				html.add("\n");
+			case "text:span":
+				for( x in e )
+					extractTextContent(html,x, line);
+			default:
+				throw "assert " + e.nodeName+" at line "+line;
+			}
+		} else
+			html.add(e.toString());
 	}
 
 	function checkLine( l : Line, hasMany : Bool ) {
@@ -547,9 +558,11 @@ class OdsChecker {
 			status.out.push(x);
 			status.obj = prev;
 		case DWhileNot(cond, d):
-			while( !checkRec(cond,false) )
+			while( !checkRec(cond,false) ) {
+				lastError = CMatch;
 				if( !checkRec(d, true) )
 					return false;
+			}
 		}
 		return true;
 	}
