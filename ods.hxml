@@ -1,0 +1,7 @@
+-cp .
+-swf9 example.swf
+-swf-header 800:600:30:FFFFFF
+--flash-strict
+-swf-version 9
+-main Example
+-lib format
