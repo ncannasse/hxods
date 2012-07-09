@@ -5,3 +5,4 @@
 -swf-version 9
 -main Example
 -lib format
+-D haxe3

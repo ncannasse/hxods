@@ -27,10 +27,10 @@ class Data {
 		return switch( e.expr ) {
 		case EConst(c):
 			switch( c ) {
-			case CIdent(t), CType(t): t;
+			case CIdent(t) #if !haxe3 , CType(t) #end: t;
 			default: Context.error("Invalid type", e.pos);
 			}
-		case EField(e, f), EType(e, f):
+		case EField(e, f) #if !haxe3 , EType(e, f) #end:
 			getType(e) + "." + f;
 		default:
 			Context.error("Invalid type", e.pos);
@@ -208,7 +208,7 @@ class Data {
 			case "Null": opt(getKind(f, params[0]));
 			case "mt.data.ModsID": A(f.name, RReg(regid));
 			#if mt
-			case "mt.data.ModsEncoded": A(f.name, RCustom("encoded id", parseEncoded));
+			case "mt.data.ModsEncoded": A(f.name, RCustom("encoded id",parseEncoded));
 			#end
 			case "mt.data.ModsCheck": opt(A(f.name, RMap(["x", "X", "o", "O"], [true, true, true, true])));
 			case "mt.data.ModsConstraint":
@@ -430,7 +430,7 @@ class Data {
 	static function loadODS( file : String ) {
 		var o = cachedODS.get(file);
 		if( o == null ) {
-			var f = neko.io.File.read(file, true);
+			var f = sys.io.File.read(file, true);
 			o = new OdsChecker();
 			o.loadODS(f);
 			f.close();
@@ -443,7 +443,7 @@ class Data {
 	static function getODSCache( fileName : String, pos : Position, type : String, sign : String, buildData ) {
 		var db = cachedDB.get(fileName);
 		var file = try Context.resolvePath(fileName) catch( e : Dynamic ) Context.error("File not found", pos);
-
+		
 		var m = switch( Context.getLocalType() ) {
 		case TInst(c, _): c.get().module;
 		case TEnum(e, _): e.get().module;
@@ -451,14 +451,14 @@ class Data {
 		default: null;
 		}
 		Context.registerModuleDependency(m, file);
-
+		
 		if( db == null ) {
 			var path = file.split(".");
 			if( path.length > 1 )
 				path.pop();
 			var cache = path.join(".") + ".cache";
-			if( neko.FileSystem.exists(cache) && neko.FileSystem.stat(cache).mtime.getTime() > neko.FileSystem.stat(file).mtime.getTime() )
-				db = { file : cache, h : haxe.Unserializer.run(neko.io.File.getContent(cache)) };
+			if( sys.FileSystem.exists(cache) && sys.FileSystem.stat(cache).mtime.getTime() > sys.FileSystem.stat(file).mtime.getTime() )
+				db = { file : cache, h : haxe.Unserializer.run(sys.io.File.getContent(cache)) };
 			else
 				db = { file : cache, h : new Hash() };
 			cachedDB.set(fileName, db);
@@ -469,7 +469,7 @@ class Data {
 		var t = haxe.Timer.stamp();
 		var bytes = buildData(loadODS(file));
 		db.h.set(type, { sign : sign, bytes : bytes } );
-		var f = neko.io.File.write(db.file, true);
+		var f = sys.io.File.write(db.file, true);
 		f.writeString(haxe.Serializer.run(db.h));
 		f.close();
 		#if !mods_silent
@@ -585,7 +585,7 @@ class Data {
 			var get = mk(EConst(CIdent("getCacheFile")));
 			args.push(mk(ECall(mk(EConst(CIdent("callback"))),[get,mk(EConst(CString(file.split(".ods").join(".cache"))))])));
 		}
-		e = mk(ECall(mk(EField(mk(EType(mk(EConst(CIdent("ods"))),"Data")),"extract")), args));
+		e = mk(ECall(mk(EField(mk(#if haxe3 EField #else EType #end(mk(EConst(CIdent("ods"))),"Data")),"extract")), args));
 		var pack = type.split(".");
 		var ct = TPath( { pack : pack, name : pack.pop(), params : [], sub : null } );
 		ct = TPath( { pack : [], name : "Array", params : [TPType(ct)], sub : null } );
@@ -656,7 +656,7 @@ class Data {
 		}
 		return constructs.concat(Context.getBuildFields());
 	}
-	
+
 	static function encode( file : String, data : String ) {
 		return haxe.io.Bytes.ofString(data);
 	}
@@ -664,7 +664,7 @@ class Data {
 	static function decode( data : haxe.io.Bytes ) : String {
 		return data.toString();
 	}
-	
+
 	#if neko
 	static var CACHED = null;
 	#end
@@ -675,7 +675,7 @@ class Data {
 		if( CACHED == null ) CACHED = new Hash();
 		var cache : Hash<{ bytes : haxe.io.Bytes }> = CACHED.get(file);
 		if( cache == null ) {
-			cache = haxe.Unserializer.run(neko.io.File.getContent(file));
+			cache = haxe.Unserializer.run(sys.io.File.getContent(file));
 			CACHED.set(file, cache);
 		}
 		var cinf = cache.get(data);

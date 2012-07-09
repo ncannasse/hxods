@@ -23,7 +23,7 @@
     <option flashStrict="True" />
     <option mainClass="Example" />
     <option enabledebug="False" />
-    <option additional="-lib format" />
+    <option additional="-lib format&#xA;-D haxe3" />
   </build>
   <!-- haxelib libraries -->
   <haxelib>
@@ -43,6 +43,7 @@
     <hidden path="ods.hxml" />
     <hidden path="test.cache" />
     <hidden path="example.swf" />
+    <hidden path="README.md" />
   </hiddenPaths>
   <!-- Executed before build -->
   <preBuildCommand />
