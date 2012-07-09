@@ -206,12 +206,12 @@ class Data {
 		case TType(tt, params):
 			return switch( tt.toString() ) {
 			case "Null": opt(getKind(f, params[0]));
-			case "mt.data.ModsID": A(f.name, RReg(regid));
+			case "ods.OdsID": A(f.name, RReg(regid));
 			#if mt
-			case "mt.data.ModsEncoded": A(f.name, RCustom("encoded id",parseEncoded));
+			case "ods.OdsEncoded": A(f.name, RCustom("encoded id",parseEncoded));
 			#end
-			case "mt.data.ModsCheck": opt(A(f.name, RMap(["x", "X", "o", "O"], [true, true, true, true])));
-			case "mt.data.ModsConstraint":
+			case "ods.OdsCheck": opt(A(f.name, RMap(["x", "X", "o", "O"], [true, true, true, true])));
+			case "ods.OdsConstraint":
 				var sparams = [];
 				for( p in params )
 					switch( p ) {
@@ -221,7 +221,7 @@ class Data {
 					}
 				var ids = getModsColumn(f.pos,sparams[0], sparams[1], sparams[2]);
 				A(f.name, RValues(ids));
-			case "mt.data.ModsSkip": null;
+			case "ods.OdsSkip": null;
 			default: getKind({ name : f.name, meta : f.meta, pos : tt.get().pos }, Context.follow(t,true));
 			}
 		case TEnum(t, params):
@@ -443,7 +443,7 @@ class Data {
 	static function getODSCache( fileName : String, pos : Position, type : String, sign : String, buildData ) {
 		var db = cachedDB.get(fileName);
 		var file = try Context.resolvePath(fileName) catch( e : Dynamic ) Context.error("File not found", pos);
-		
+
 		var m = switch( Context.getLocalType() ) {
 		case TInst(c, _): c.get().module;
 		case TEnum(e, _): e.get().module;
@@ -451,7 +451,7 @@ class Data {
 		default: null;
 		}
 		Context.registerModuleDependency(m, file);
-		
+
 		if( db == null ) {
 			var path = file.split(".");
 			if( path.length > 1 )
