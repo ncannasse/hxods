@@ -7,13 +7,20 @@ typedef OdsSkip<T> = T;
 typedef OdsConstraint<Const,Const,Const> = String;
 
 #if macro
+#if haxe_211
+import haxe.macro.Type;
+import haxe.macro.Expr;
+#else
 import haxe.macro.Expr;
 import haxe.macro.Type;
+#end
 import haxe.macro.Context;
 import ods.Ods;
 #end
 
 class Data {
+
+	static var ENCODER = #if mt MTEncoder #else Encoder #end;
 
 	#if macro
 
@@ -49,9 +56,9 @@ class Data {
 		};
 	}
 
-	#if mt
+	#if (spadm || mt)
 	static function parseEncoded( s : String ) {
-		return try mt.db.Id.encode(s) catch( e : Dynamic ) null;
+		return try spadm.Id.encode(s) catch( e : Dynamic ) null;
 	}
 	#end
 
@@ -207,7 +214,7 @@ class Data {
 			return switch( tt.toString() ) {
 			case "Null": opt(getKind(f, params[0]));
 			case "ods.OdsID": A(f.name, RReg(regid));
-			#if mt
+			#if (spadm || mt)
 			case "ods.OdsEncoded": A(f.name, RCustom("encoded id",parseEncoded));
 			#end
 			case "ods.OdsCheck": opt(A(f.name, RMap(["x", "X", "o", "O"], [true, true, true, true])));
@@ -423,7 +430,7 @@ class Data {
 		var s = new haxe.Serializer();
 		s.useEnumIndex = true;
 		s.serialize(fields);
-		return Data.encode(file,s.toString());
+		return ENCODER.encode(file,neko.Lib.bytesReference(s.toString()));
 	}
 
 	static var cachedODS = new Hash();
@@ -555,7 +562,7 @@ class Data {
 
 	#end
 
-	@:macro public static function parseODS( efile : Expr, sheet : Expr, t : Expr ) {
+	@:macro public static function parse( efile : Expr, sheet : Expr, t : Expr ) {
 		var pos = Context.currentPos();
 		var mk = function(e) return { expr : e, pos : pos };
 		var file = getString(efile);
@@ -657,14 +664,6 @@ class Data {
 		return constructs.concat(Context.getBuildFields());
 	}
 
-	static function encode( file : String, data : String ) {
-		return haxe.io.Bytes.ofString(data);
-	}
-
-	static function decode( data : haxe.io.Bytes ) : String {
-		return data.toString();
-	}
-
 	#if neko
 	static var CACHED = null;
 	#end
@@ -685,7 +684,7 @@ class Data {
 		#else
 		var data = haxe.Resource.getBytes(data);
 		#end
-		var data = decode(data);
+		var data = ENCODER.decode(data);
 		var uns = new haxe.Unserializer(data);
 		uns.setResolver({
 			resolveClass : function(_) return null,
