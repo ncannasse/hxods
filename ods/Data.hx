@@ -210,6 +210,14 @@ class Data {
 				}
 			default: throw "Unsupported " + Std.string(t);
 			});
+		case TAbstract(t, params):
+			return A(f.name,switch( t.toString() ) {
+			case "Int": RInt;
+			case "Float": RFloat;
+			case "Bool":
+				return A(f.name, RMap(["true","1","T","false","0","F"],[true,true,true,false,false,false]));
+			default: throw "Unsupported " + Std.string(t);
+			});
 		case TType(tt, params):
 			return switch( tt.toString() ) {
 			case "Null": opt(getKind(f, params[0]));
@@ -574,7 +582,7 @@ class Data {
 		var signature = Context.signature(rules) + getString(sheet) + subField;
 		var bytes = getODSCache(file, efile.pos, type, signature, callback(parseRules,rules,subField,file,sheet) );
 		var isNeko = Context.defined("neko");
-		var res = isNeko ? type : haxe.Md5.encode(file + "@" + type);
+		var res = isNeko ? type : #if haxe3 haxe.crypto.Md5.encode #else haxe.Md5.encode #end(file + "@" + type);
 		if( !isNeko )
 			Context.addResource(res,bytes);
 		var e = mk(EConst(CString(res)));

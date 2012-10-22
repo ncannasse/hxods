@@ -11,7 +11,7 @@ typedef ItemData = {
 
 class Example {
 	
-	static var DATA = ods.Data.parseODS("test.ods", "items", ItemData);
+	static var DATA = ods.Data.parse("test.ods", "items", ItemData);
 	
 	static function main() {
 		for( e in Type.allEnums(Item) )

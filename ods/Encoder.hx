@@ -1,13 +1,13 @@
-package hxods;
+package ods;
 
 class Encoder {
 
-	public static function encode( file : String, data : String ) {
-		return haxe.io.Bytes.ofString(data);
+	public static function encode( file : String, data : haxe.io.Bytes ) {
+		return data;
 	}
 
 	public static function decode( data : haxe.io.Bytes ) : String {
-		return data.toString();
+		return #if neko neko.Lib.stringReference(data) #else data.toString() #end;
 	}
 
 
