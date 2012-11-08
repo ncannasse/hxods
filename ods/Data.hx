@@ -1,11 +1,5 @@
 package ods;
 
-typedef OdsID = String;
-typedef OdsEncoded = Int;
-typedef OdsCheck = Bool;
-typedef OdsSkip<T> = T;
-typedef OdsConstraint<Const,Const,Const> = String;
-
 #if macro
 #if haxe_211
 import haxe.macro.Type;
@@ -17,6 +11,12 @@ import haxe.macro.Type;
 import haxe.macro.Context;
 import ods.Ods;
 #end
+
+typedef OdsID = String;
+typedef OdsEncoded = Int;
+typedef OdsCheck = Bool;
+typedef OdsSkip<T> = T;
+typedef OdsConstraint<Const,Const,Const> = String;
 
 class Data {
 
