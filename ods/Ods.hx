@@ -59,7 +59,7 @@ private typedef Status = {
 
 class OdsChecker {
 
-	var sheets : Hash<F>;
+	var sheets : Map<String,F>;
 	var root : Xml;
 	var status : Status;
 	var lastError : Check;
@@ -70,7 +70,7 @@ class OdsChecker {
 	static var efloat = ~/^-?([0-9]+)|([0-9]*[.,][0-9]+)$/;
 
 	public function new() {
-		sheets = new Hash();
+		sheets = new Map();
 	}
 
 	public function loadODS( i : haxe.io.Input ) {
@@ -194,7 +194,7 @@ class OdsChecker {
 			case RBool: "bool";
 			case RFloat: "float";
 			case RText: "text";
-			case RReg(e): "regexp";
+			case RReg(_): "regexp";
 			case RValues(vl, _), REnum(vl, _), RMap(vl, _): "one of these : (" + Lambda.map(vl, function(v) return "'" + v + "'").join(",") + ")";
 			case RArray(sep, r): "an array of " + ruleString(r) + " separated by '" + sep + "'";
 			case RCustom(name,_): name;

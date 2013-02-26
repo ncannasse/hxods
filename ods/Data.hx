@@ -68,14 +68,14 @@ class Data {
 		var args = [];
 		while( true ) {
 			var c = StringTools.fastCodeAt(str,pos);
-			if( StringTools.isEOF(c) ) break;
+			if( StringTools.isEof(c) ) break;
 			pos++;
 			if( c == '('.code ) {
 				// skip content until matching closing parenthesis
 				var count = 1;
 				while( true ) {
 					c = StringTools.fastCodeAt(str,pos);
-					if( StringTools.isEOF(c) ) break;
+					if( StringTools.isEof(c) ) break;
 					pos++;
 					if( c == ')'.code ) {
 						count--;
@@ -88,7 +88,7 @@ class Data {
 				var count = 1;
 				while( true ) {
 					c = StringTools.fastCodeAt(str,pos);
-					if( StringTools.isEOF(c) ) break;
+					if( StringTools.isEof(c) ) break;
 					pos++;
 					if( c == ']'.code ) {
 						count--;
@@ -143,7 +143,7 @@ class Data {
 					default: throw "assert";
 					}
 					switch( r ) {
-					case RArray(sep, rsub):
+					case RArray(_, rsub):
 						if( a.charCodeAt(0) == '['.code && a.charCodeAt(a.length - 1) == ']'.code ) {
 							a = a.substr(1, a.length - 2);
 							r = RArray(',', rsub);
@@ -164,7 +164,7 @@ class Data {
 	static function parseEnumClosure(names, values, rules) {
 		// for typing only
 		if( false )
-			return callback(parseEnum, names, values, rules);
+			return parseEnum.bind(names, values, rules);
 		// this will ensure that the parameters are part of the signature
 		return untyped __dollar__closure(parseEnum, null, names, values, rules);
 	}
@@ -210,7 +210,7 @@ class Data {
 				}
 			default: throw "Unsupported " + Std.string(t);
 			});
-		case TAbstract(t, params):
+		case TAbstract(t, _):
 			return A(f.name,switch( t.toString() ) {
 			case "Int": RInt;
 			case "Float": RFloat;
@@ -239,7 +239,7 @@ class Data {
 			case "ods.OdsSkip": null;
 			default: getKind({ name : f.name, meta : f.meta, pos : tt.get().pos }, Context.follow(t,true));
 			}
-		case TEnum(t, params):
+		case TEnum(t, _):
 			var path = t.toString();
 			if( path == "Bool" )
 				return A(f.name, RMap(["true","1","T","false","0","F"],[true,true,true,false,false,false]));
@@ -352,7 +352,7 @@ class Data {
 		var esheet = { expr : EConst(CString(sheet)), pos : pos };
 		var ecolumn = { expr : EConst(CString(column)), pos : pos };
 		var efilter = null;
-		var bytes = getODSCache(file, pos, "_enum." + sheet + "_" + column, sheet + Context.signature(efilter), callback(extractColumns, esheet, ecolumn, efilter, regid) );
+		var bytes = getODSCache(file, pos, "_enum." + sheet + "_" + column, sheet + Context.signature(efilter), extractColumns.bind(esheet, ecolumn, efilter, regid) );
 		return bytes.toString().split("@");
 	}
 
@@ -441,7 +441,7 @@ class Data {
 		return ENCODER.encode(file,neko.Lib.bytesReference(s.toString()));
 	}
 
-	static var cachedODS = new Hash();
+	static var cachedODS = new Map();
 	static function loadODS( file : String ) {
 		var o = cachedODS.get(file);
 		if( o == null ) {
@@ -454,7 +454,7 @@ class Data {
 		return o;
 	}
 
-	static var cachedDB = new Hash<{ file : String, h : Hash<{ sign : String, bytes : haxe.io.Bytes }> }>();
+	static var cachedDB = new Map<String,{ file : String, h : Map<String,{ sign : String, bytes : haxe.io.Bytes }> }>();
 	static function getODSCache( fileName : String, pos : Position, type : String, sign : String, buildData ) {
 		var db = cachedDB.get(fileName);
 		var file = try Context.resolvePath(fileName) catch( e : Dynamic ) Context.error("File not found", pos);
@@ -475,7 +475,7 @@ class Data {
 			if( sys.FileSystem.exists(cache) && sys.FileSystem.stat(cache).mtime.getTime() > sys.FileSystem.stat(file).mtime.getTime() )
 				db = { file : cache, h : haxe.Unserializer.run(sys.io.File.getContent(cache)) };
 			else
-				db = { file : cache, h : new Hash() };
+				db = { file : cache, h : new Map() };
 			cachedDB.set(fileName, db);
 		}
 		var data = db.h.get(type);
@@ -570,7 +570,7 @@ class Data {
 
 	#end
 
-	@:macro public static function parse( efile : Expr, sheet : Expr, t : Expr ) {
+	macro public static function parse( efile : Expr, sheet : Expr, t : Expr ) {
 		var pos = Context.currentPos();
 		var mk = function(e) return { expr : e, pos : pos };
 		var file = getString(efile);
@@ -580,7 +580,7 @@ class Data {
 		var tinf = try Context.getType(type) catch( e : Dynamic ) Context.error("Type not found", t.pos);
 		var rules = try getFields(tinf,false) catch( e : Dynamic ) Context.error(Std.string(e), t.pos);
 		var signature = Context.signature(rules) + getString(sheet) + subField;
-		var bytes = getODSCache(file, efile.pos, type, signature, callback(parseRules,rules,subField,file,sheet) );
+		var bytes = getODSCache(file, efile.pos, type, signature, parseRules.bind(rules,subField,file,sheet) );
 		var isNeko = Context.defined("neko");
 		var res = isNeko ? type : #if haxe3 haxe.crypto.Md5.encode #else haxe.Md5.encode #end(file + "@" + type);
 		if( !isNeko )
@@ -610,7 +610,7 @@ class Data {
 		]));
 	}
 
-	@:macro public static function build( params : Array<Expr> ) : Array<Field> {
+	macro public static function build( params : Array<Expr> ) : Array<Field> {
 		var pos = Context.currentPos();
 		if( params.length < 3 )
 			Context.error("Required parameters (file,sheet,column,?filter)", pos);
@@ -621,8 +621,8 @@ class Data {
 		var file = getString(efile);
 		var column = getString(ecolumn);
 		var sheet = getString(esheet);
-		var bytes = getODSCache(file, efile.pos, "_enum." + sheet+"_"+column, sheet + Context.signature(efilter), callback(extractColumns, esheet, ecolumn, efilter, regid) );
-		var constructs = [];
+		var bytes = getODSCache(file, efile.pos, "_enum." + sheet+"_"+column, sheet + Context.signature(efilter), extractColumns.bind(esheet, ecolumn, efilter, regid) );
+		var constructs : Array<haxe.macro.Field> = [];
 		for( id in bytes.toString().split("@") ) {
 			if( id == "_" ) continue;
 			constructs.push( { name : id, pos : pos, access : [], doc : null, meta : [], kind : FVar(null,null) } );
@@ -630,7 +630,7 @@ class Data {
 		return constructs.concat(Context.getBuildFields());
 	}
 
-	@:macro public static function buildComplex( params : Array<Expr> ) : Array<Field> {
+	macro public static function buildComplex( params : Array<Expr> ) : Array<Field> {
 		var pos = Context.currentPos();
 		if( params.length < 3 )
 			Context.error("Required parameters (file,sheet,column,?filter)", pos);
@@ -641,8 +641,8 @@ class Data {
 		var file = getString(efile);
 		var column = getString(ecolumn);
 		var sheet = getString(esheet);
-		var bytes = getODSCache(file, efile.pos, "_enum." + sheet+"_"+column, sheet + Context.signature(efilter), callback(extractColumns, esheet, ecolumn, efilter, ~/^[A-Za-z_]/) );
-		var constructs = [];
+		var bytes = getODSCache(file, efile.pos, "_enum." + sheet+"_"+column, sheet + Context.signature(efilter), extractColumns.bind(esheet, ecolumn, efilter, ~/^[A-Za-z_]/) );
+		var constructs = new Array<Field>();
 		for( id in bytes.toString().split("@") ) {
 			if( id == "_" ) continue;
 			if( regid.match(id) ) {
@@ -679,8 +679,8 @@ class Data {
 	public static function extract<T>( data : String, names : Array<String>, enums : Array<Dynamic> #if neko, getCacheFile : Void -> String #end ) : Array<T> {
 		#if neko
 		var file = getCacheFile();
-		if( CACHED == null ) CACHED = new Hash();
-		var cache : Hash<{ bytes : haxe.io.Bytes }> = CACHED.get(file);
+		if( CACHED == null ) CACHED = new Map();
+		var cache : Map<String,{ bytes : haxe.io.Bytes }> = CACHED.get(file);
 		if( cache == null ) {
 			cache = haxe.Unserializer.run(sys.io.File.getContent(file));
 			CACHED.set(file, cache);
