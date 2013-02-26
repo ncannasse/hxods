@@ -5,12 +5,12 @@ class DataCompare {
 
 	public static function compare( fr : String, int : String, configFile : String ) {
 		var ofr = new OdsChecker();
-		ofr.loadODS(neko.io.File.read(fr));
+		ofr.loadODS(sys.io.File.read(fr));
 		var oint = new OdsChecker();
-		oint.loadODS(neko.io.File.read(int));
+		oint.loadODS(sys.io.File.read(int));
 
-		var config = new Hash();
-		for( l in neko.io.File.getContent(configFile).split("\n") ) {
+		var config = new Map();
+		for( l in sys.io.File.getContent(configFile).split("\n") ) {
 			var l = StringTools.trim(l);
 			if( l == "" || l.charAt(0) == "#" ) continue;
 			config.set(l, true);
@@ -20,7 +20,7 @@ class DataCompare {
 		var sheet = "";
 
 		function error(msg) {
-			neko.Lib.println(int + ":"+line+": in '"+sheet+"' "+ msg+"\n");
+			Sys.println(int + ":"+line+": in '"+sheet+"' "+ msg+"\n");
 		}
 
 		for( s in oint.getSheets() ) {

@@ -1,3 +1,7 @@
+#if neko
+import ods.DataCompare;
+#end
+
 @:build(ods.Data.build("test.ods","items","id"))
 enum Item {
 }
@@ -10,6 +14,10 @@ typedef ItemData = {
 }
 
 class Example {
+	
+	static function getCacheFile(file) {
+		return file;
+	}
 	
 	static var DATA = ods.Data.parse("test.ods", "items", ItemData);
 	

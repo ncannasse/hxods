@@ -598,7 +598,7 @@ class Data {
 		var args =  [e, mk(EArrayDecl(names)), mk(EArrayDecl(enums))];
 		if( isNeko ) {
 			var get = mk(EConst(CIdent("getCacheFile")));
-			args.push(mk(ECall(mk(EConst(CIdent("callback"))),[get,mk(EConst(CString(file.split(".ods").join(".cache"))))])));
+			args.push(mk(ECall(mk(EField(get,"bind")),[mk(EConst(CString(file.split(".ods").join(".cache"))))])));
 		}
 		e = mk(ECall(mk(EField(mk(#if haxe3 EField #else EType #end(mk(EConst(CIdent("ods"))),"Data")),"extract")), args));
 		var pack = type.split(".");
