@@ -454,10 +454,11 @@ class Data {
 		return o;
 	}
 
-	static var cachedDB = new Map<String,{ file : String, h : Map<String,{ sign : String, bytes : haxe.io.Bytes }> }>();
+	static var cachedDB = new Map<String,{ file : String, time : Float, h : Map<String,{ sign : String, bytes : haxe.io.Bytes }> }>();
+	
 	static function getODSCache( fileName : String, pos : Position, type : String, sign : String, buildData ) {
-		var db = cachedDB.get(fileName);
 		var file = try Context.resolvePath(fileName) catch( e : Dynamic ) Context.error("File not found", pos);
+		var db = cachedDB.get(file);
 
 		var m = switch( Context.getLocalType() ) {
 		case TInst(c, _): c.get().module;
@@ -467,16 +468,17 @@ class Data {
 		}
 		Context.registerModuleDependency(m, file);
 
-		if( db == null ) {
-			var path = file.split(".");
-			if( path.length > 1 )
-				path.pop();
-			var cache = path.join(".") + ".cache";
+		var path = file.split(".");
+		if( path.length > 1 )
+			path.pop();
+		var cache = path.join(".") + ".cache";
+		// reload cache if it's been modified by another process
+		if( db == null || db.time != (try sys.FileSystem.stat(cache).mtime.getTime() catch( e : Dynamic ) -1) ) {
 			if( sys.FileSystem.exists(cache) && sys.FileSystem.stat(cache).mtime.getTime() > sys.FileSystem.stat(file).mtime.getTime() )
-				db = { file : cache, h : haxe.Unserializer.run(sys.io.File.getContent(cache)) };
+				db = { file : cache, time : 0., h : haxe.Unserializer.run(sys.io.File.getContent(cache)) };
 			else
-				db = { file : cache, h : new Map() };
-			cachedDB.set(fileName, db);
+				db = { file : cache, time : 0., h : new Map() };
+			cachedDB.set(file, db);
 		}
 		var data = db.h.get(type);
 		if( data != null && data.sign == sign && data.bytes != null )
@@ -487,6 +489,7 @@ class Data {
 		var f = sys.io.File.write(db.file, true);
 		f.writeString(haxe.Serializer.run(db.h));
 		f.close();
+		db.time = sys.FileSystem.stat(db.file).mtime.getTime();
 		#if !mods_silent
 		trace("Rebuilt " + type + " from '" + fileName + "' in " + Std.int((haxe.Timer.stamp() - t) * 100) / 100 + "s");
 		#end
